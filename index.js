@@ -26,14 +26,22 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    await client.connect();
+    // await client.connect();
     
     const taskCollection = client.db("userManagement").collection("allTasks")
     
     // getting all tasks
     app.get('/allTasks', async(req,res)=>{
-      const result = await taskCollection.find().toArray()
-      res.send(result);
+      const viewFilter = req.query.filter;
+      if(viewFilter ===""){
+        const result = await taskCollection.find().toArray()
+        res.send(result);
+      }
+      else{
+        const query = {status: viewFilter}
+        const result = await taskCollection.find(query).toArray()
+        res.send(result);
+      } 
     })
 
     // adding a task
@@ -59,6 +67,21 @@ async function run() {
       res.send(result);
     })
 
+    // updating a task
+    app.patch("/updateTask/:id", async(req,res)=>{
+      const id = req.params.id;
+      const updatedTask = req.body;
+      const filter = {_id: new ObjectId(id)}
+      const updatedDoc ={
+        $set:{
+          title: updatedTask.title,
+          description: updatedTask.description,
+          status: updatedTask.status,
+        }
+      } 
+      const result = await taskCollection.updateOne(filter, updatedDoc)
+      res.send(result)
+    })
 
     app.post("/updateStatus/:id", async(req,res)=>{
       const id = req.params.id
